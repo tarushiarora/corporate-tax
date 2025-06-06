@@ -132,9 +132,21 @@ def main():
                     df = pd.DataFrame(t)
                     tables_text += df.to_string(index=False) + "\n"
     elif file.name.endswith(".csv"):
-        df = pd.read_csv(file)
-        full_text = df.to_string(index=False)
-        tables_text = full_text
+        df = pd.read_csv(file, header=None)
+        # Extract only rows with relevant financial keywords
+        key_rows = []
+        for idx, row in df.iterrows():
+            row_str = " ".join([str(x) for x in row if pd.notnull(x)])
+            if any(
+                kw in row_str.lower()
+                for kw in [
+                    "revenue", "sales", "expenses", "depreciation", "deductions",
+                    "net income", "profit", "loss", "tax"
+                ]
+            ):
+                key_rows.append(row_str)
+        full_text = "\n".join(key_rows)
+        tables_text = df.to_string(index=False)
 
     with st.spinner("Processing with GPT-4..."):
         result = extract_financial_data_with_ai(full_text, tables_text)
